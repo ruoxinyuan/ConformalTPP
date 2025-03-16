@@ -2,6 +2,8 @@ library(splines2)
 library(dplyr)
 library(ggplot2)
 
+source("utils/period_basis_intensity.R")
+
 generate_hawkes_parameters <- function(
     m = 5,                      # Number of event types
     K = 5,                      # B-spline basis count
@@ -10,7 +12,7 @@ generate_hawkes_parameters <- function(
     gamma_range = c(0, 1),      # Range for gamma parameters in lambda0
     alpha_range = c(0, 0.5),    # Range for alpha parameters
     beta_range = c(1, 2),       # Range for beta parameters
-    seed = NULL) {
+    seed = 42) {
   # Generate parameters for mutual Hawkes process
 
   
@@ -28,48 +30,41 @@ generate_hawkes_parameters <- function(
 }
 
 normalize_alpha_matrix <- function(alpha, beta) {
-  #' Ensure spectral radius of alpha/beta matrix < 1
-  
+  # Ensure spectral radius of alpha/beta matrix < 1
   alpha_beta <- alpha / beta
   svd_decomp <- svd(alpha_beta)
   max_singular <- max(svd_decomp$d)
   
-  if(max_singular > 1) {
+  if (max_singular > 1) {
     scaling_factor <- max_singular * 1.5  # Conservative scaling
     alpha <- alpha / scaling_factor
   }
-  alpha
+  return(alpha)
 }
 
 simulate_mutual_hawkes <- function(
     params,                  # Parameters from generate_hawkes_parameters
     total_time,              # Total simulation time
-    context_window = 100,    # Context window size
-    test_periods = 100,      # Number of test periods
     memory_cutoff = 5,       # Memory window A
     seed = NULL) {
-  #' Simulate mutual Hawkes process with periodic intensities
-  #' 
-  #' @return Dataframe of simulated events with columns:
-  #' - event_time: Timestamp of event
-  #' - event_type: Cluster identifier
+  # Simulate mutual Hawkes process with periodic intensities
+
   
   if(!is.null(seed)) set.seed(seed)
   
   # Generate intensity functions using previous implementation
-  intensity_obj <- generate_intensity_functions(
+  intensity_obj <- generate_lambda0_intensity(
     K = params$K,
     m = params$m,
     total_time = total_time,
     period_length = params$period_length,
-    beta_range = c(min(params$lambda0_gamma), max(params$lambda0_gamma)),
-    theta_range = c(min(params$lambda0_theta), max(params$lambda0_theta)),
+    lambda0_gamma_range = c(min(params$lambda0_gamma), max(params$lambda0_gamma)),
+    lambda0_theta_range = c(min(params$lambda0_theta), max(params$lambda0_theta)),
     seed = seed
   )
   
   # Initialize event storage
-  event_df <- data.frame(event_time = numeric(), 
-                        event_type = integer())
+  event_df <- data.frame(event_time = numeric(), event_type = integer())
   
   # Generate immigrant events using thinned algorithm
   for(cluster in 1:params$m) {
@@ -114,7 +109,7 @@ simulate_mutual_hawkes <- function(
       valid_counts <- offspring_counts[offspring_counts > 0]
       
       offspring_times <- unlist(mapply(function(t, n) {
-        t + cumsum(rexp(n, params$beta[parent_cluster]))
+        t + rexp(n, params$beta[parent_cluster])
       }, valid_parents, valid_counts))
       
       # Apply memory cutoff
@@ -139,42 +134,38 @@ simulate_mutual_hawkes <- function(
 
 # Helper functions --------------------------------------------------------
 find_max_lambda0 <- function(lambda_func, period, resolution = 1000) {
-  #' Find maximum baseline intensity
-  #' 
-  #' @param lambda_func Intensity function
-  #' @param period Period length
-  #' @param resolution Grid resolution
-  #' @return Maximum intensity value
+  # Find maximum baseline intensity
   
   grid <- seq(0, period, length.out = resolution)
   max(sapply(grid, lambda_func))
 }
 
 # Example usage -----------------------------------------------------------
-if (FALSE) {
+if (TRUE) {
   # Generate parameters
   params <- generate_hawkes_parameters(
-    m = 3,
-    K = 5,
-    seed = 123
-  )
+    m = 5,                      # Number of event types
+    K = 5,                      # B-spline basis count
+    period_length = 10,         # Period length for intensity functions
+    theta_range = c(0, 0.5),    # Range for theta parameters in lambda0
+    gamma_range = c(0, 1),      # Range for gamma parameters in lambda0
+    alpha_range = c(0, 0.5),    # Range for alpha parameters
+    beta_range = c(1, 2),       # Range for beta parameters
+    seed = 42)
   
   # Normalize interaction matrix
   params$alpha <- normalize_alpha_matrix(params$alpha, params$beta)
-  
+
+  n <- 5000 # Training periods
+  k <- 100    # Context window size
+  n_test <- 100 # Test periods
+  total_time <- (n + k + n_test) * params$period_length
+
   # Run simulation
   simulation <- simulate_mutual_hawkes(
     params = params,
-    total_time = 1000,
+    total_time = total_time,
     memory_cutoff = 5,
     seed = 456
   )
-  
-  # Visualize results
-  ggplot(simulation, aes(x = event_time, color = event_type)) +
-    geom_histogram(aes(y = after_stat(density)), bins = 50) +
-    facet_wrap(~event_type) +
-    labs(title = "Event Distribution by Cluster",
-        x = "Time", y = "Density") +
-    theme_minimal()
 }
