@@ -1,0 +1,8 @@
+numpy
+pandas
+scipy
+tick
+seaborn
+scikit-learn
+torch
+joblib
