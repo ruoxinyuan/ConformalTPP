@@ -62,10 +62,12 @@ class ConformalQR(QuantileRegressor):
         Model,
         alpha: float,
         seed: int | None = None,
+        model_kwargs: dict | None = None,
     ) -> None:
         """Initialize CQR with desired base model and miscoverage level."""
         super().__init__(alpha, seed)
         self.Model = Model
+        self.model_kwargs = model_kwargs or {}
 
     def fit(
         self,
@@ -73,7 +75,7 @@ class ConformalQR(QuantileRegressor):
         y: ArrayLike,
     ) -> Self:
         """Fit base model."""
-        self.model = self.Model(seed=self.seed).fit(X, y)
+        self.model = self.Model(seed=self.seed, **self.model_kwargs).fit(X, y)
         return self
 
     def calibrate(
