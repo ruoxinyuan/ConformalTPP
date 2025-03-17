@@ -101,7 +101,7 @@ class ConformalQR(QuantileRegressor):
         y_pred_lower, y_pred_upper = self._monotonize_curves(y_pred_lower, y_pred_upper)
         
         # Optional: Ensure lower bound is non-negative (can be adjusted based on use case)
-        y_pred_lower = np.maximum(0, y_pred_lower)
+        y_pred_lower, y_pred_upper = np.maximum(0, y_pred_lower), np.maximum(0, y_pred_upper)
 
         # # Calculate prediction interval length
         # interval_lengths = y_pred_upper - y_pred_lower
