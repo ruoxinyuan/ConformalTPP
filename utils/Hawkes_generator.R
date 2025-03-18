@@ -144,13 +144,13 @@ find_max_lambda0 <- function(lambda_func, period, resolution = 1000) {
 if (TRUE) {
   # Generate parameters
   params <- generate_hawkes_parameters(
-    m = 5,                      # Number of event types
+    m = 20,                      # Number of event types
     K = 5,                      # B-spline basis count
     period_length = 10,         # Period length for intensity functions
     theta_range = c(0, 0.5),    # Range for theta parameters in lambda0
     gamma_range = c(0, 1),      # Range for gamma parameters in lambda0
-    alpha_range = c(0, 0.5),    # Range for alpha parameters
-    beta_range = c(1, 2),       # Range for beta parameters
+    alpha_range = c(0, 0.3),    # Range for alpha parameters
+    beta_range = c(1, 5),       # Range for beta parameters
     seed = 42)
   
   # Normalize interaction matrix
@@ -168,4 +168,8 @@ if (TRUE) {
     memory_cutoff = 5,
     seed = 456
   )
+
+  print(head(simulation, n = 10))
+  print(tail(simulation, n = 10))
+  # write.csv(simulation, file = "simulation.csv", row.names = FALSE)
 }

@@ -99,9 +99,20 @@ class LinearQR:
 class RandomForestQR:
     """Random Forest Regressor."""
     
-    def __init__(self, seed: int | None = None) -> None:
+    def __init__(
+        self,
+        seed: int | None = None,
+        max_depth: int = 10,
+        min_samples_split: int = 10,
+        min_samples_leaf: int = 5,
+        max_features: str = "sqrt",
+    ) -> None:
         """Initialize the model with optional random seed."""
         self.seed = seed
+        self.max_depth = max_depth
+        self.min_samples_split = min_samples_split
+        self.min_samples_leaf = min_samples_leaf
+        self.max_features = max_features
 
     def fit(
         self,
@@ -111,10 +122,10 @@ class RandomForestQR:
         """Train the Regression Forest."""
         self.model = RandomForestRegressor(
             random_state=self.seed, 
-            max_depth=5,
-            min_samples_split=10,
-            min_samples_leaf=5,
-            max_features="sqrt",
+            max_depth=self.max_depth,
+            min_samples_split=self.min_samples_split,
+            min_samples_leaf=self.min_samples_leaf,
+            max_features=self.max_features,
             ).fit(X, y)
 
         return self
