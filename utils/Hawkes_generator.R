@@ -140,11 +140,11 @@ find_max_lambda0 <- function(lambda_func, period, resolution = 1000) {
   max(sapply(grid, lambda_func))
 }
 
-# Example usage -----------------------------------------------------------
-if (TRUE) {
+# Example usage 1-----------------------------------------------------------
+if (FALSE) {
   # Generate parameters
   params <- generate_hawkes_parameters(
-    m = 20,                      # Number of event types
+    m = 5,                      # Number of event types
     K = 5,                      # B-spline basis count
     period_length = 10,         # Period length for intensity functions
     theta_range = c(0, 0.5),    # Range for theta parameters in lambda0
@@ -166,10 +166,56 @@ if (TRUE) {
     params = params,
     total_time = total_time,
     memory_cutoff = 5,
-    seed = 456
+    seed = 45
   )
 
   print(head(simulation, n = 10))
   print(tail(simulation, n = 10))
   # write.csv(simulation, file = "simulation.csv", row.names = FALSE)
+}
+
+
+# Example usage 2-----------------------------------------------------------
+if (TRUE) {
+  output_dir <- "results2"
+  if (!dir.exists(output_dir)) {
+    dir.create(output_dir)
+  }
+
+  # Generate parameters
+  params <- generate_hawkes_parameters(
+    m = 5,
+    K = 5,
+    period_length = 10,
+    theta_range = c(0, 0.5),
+    gamma_range = c(0, 1),
+    alpha_range = c(0, 0.5),
+    beta_range = c(1, 5),
+    seed = 42
+  )
+
+  # Normalize interaction matrix
+  params$alpha <- normalize_alpha_matrix(params$alpha, params$beta)
+
+  n <- 5000 # Training periods
+  k <- 100    # Context window size
+  n_test <- 100 # Test periods
+  total_time <- (n + k + n_test) * params$period_length
+
+  # Run simulation for 100 times
+  for (i in 1:100) {
+    simulation <- simulate_mutual_hawkes(
+      params = params,
+      total_time = total_time,
+      memory_cutoff = 5,
+      seed = i
+    )
+
+    file_name <- sprintf("simulation_%03d.csv", i)
+    file_path <- file.path(output_dir, file_name)
+
+    write.csv(simulation, file = file_path, row.names = FALSE)
+    
+    cat(sprintf("Simulation %d saved to %s\n", i, file_path))
+  }
 }

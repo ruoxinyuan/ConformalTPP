@@ -1,8 +1,5 @@
 numpy
 pandas
-scipy
-tick
-seaborn
+lightgbm
 scikit-learn
 torch
-joblib
