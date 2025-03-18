@@ -30,6 +30,7 @@ class GradientBoostingQR:
             deterministic=True,
             force_row_wise=True,
             seed=self.seed,
+            verbosity=-1
         ).fit(X, y)
 
         return self

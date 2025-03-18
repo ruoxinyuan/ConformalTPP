@@ -1,4 +1,5 @@
 import numpy as np
+import os
 from models import ConformalQR, GradientBoostingQR, LinearQR, RandomForestQR, mlpQR, lstmQR, TransformerQR
 from utils.data import load_event_data, generate_X_y_multitype, pad_sequences
 from utils.eval import empirical_coverage, average_interval_size
@@ -44,6 +45,9 @@ CONFIG = {
 
 def load_and_preprocess_data(config):
     """Load and preprocess event data"""
+    if not os.path.exists(config["data"]["path"]):
+        raise FileNotFoundError(f"Data file missing: {config['data']['path']}")
+    
     event_times = load_event_data(config["data"]["path"])
     X, y = generate_X_y_multitype(
         event_times,
@@ -87,14 +91,12 @@ def main():
     split = CONFIG["data"]
     
     # Dataset splitting
-    X_train, X_calib, X_test = np.split(X, [
+    split_points = [
         split["train_size"], 
         split["train_size"] + split["calib_size"]
-    ])
-    y_train, y_calib, y_test = np.split(y, [
-        split["train_size"], 
-        split["train_size"] + split["calib_size"]
-    ])
+    ]
+    X_train, X_calib, X_test = np.split(X, split_points)
+    y_train, y_calib, y_test = np.split(y, split_points)
 
     # Prepare targets
     targets = {
