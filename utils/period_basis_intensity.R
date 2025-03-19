@@ -7,9 +7,9 @@ generate_lambda0_intensity <- function(
     period_length = 10,        # Period length for cycles
     seed = 42,                 # Random seed
     lambda0_gamma_range = c(0, 1),    # Range for beta parameters
-    lambda0_theta_range = c(0, 0.5)) { # Range for theta parameters
-    
-    # Generate periodic intensity functions for multiple event types
+    lambda0_theta_range = c(0, 0.5),  # Range for theta parameters
+    periodic_weight = 1.0)            # Weight of periodic component [0,1]
+{ # Generate periodic intensity functions for multiple event types
   
   set.seed(seed)
   
@@ -19,8 +19,12 @@ generate_lambda0_intensity <- function(
     m = m,
     total_time = total_time,
     period_length = period_length,
+    # Parameters for periodic component
     lambda0_theta = runif(K, lambda0_theta_range[1], lambda0_theta_range[2]),
-    lambda0_gamma = matrix(runif(m*K, lambda0_gamma_range[1], lambda0_gamma_range[2]), nrow = m)
+    lambda0_gamma = matrix(runif(m*K, lambda0_gamma_range[1], lambda0_gamma_range[2]), nrow = m),
+    # Parameters for non-periodic component
+    lambda0_base = runif(m, 0, 0.24),  # Baseline intensity for non-periodic component
+    periodic_weight = periodic_weight
   )
   
   # Create periodic B-spline basis
@@ -36,16 +40,21 @@ generate_lambda0_intensity <- function(
   # Create intensity functions
   intensity_funcs <- lapply(1:m, function(i) {
     function(t) {
+      # Periodic component
       cyclic_t <- t %% period_length
       basis <- predict(pbs_matrix, cyclic_t)
-      as.numeric(basis %*% (params$lambda0_gamma[i, ] * params$lambda0_theta))
+      periodic_part <- as.numeric(basis %*% (params$lambda0_gamma[i, ] * params$lambda0_theta))
+      
+      # Non-periodic component
+      nonperiodic_part <- params$lambda0_base[i]
+      
+      # Weighted mixture
+      params$periodic_weight * periodic_part + 
+        (1 - params$periodic_weight) * nonperiodic_part
     }
   })
   
-  list(
-    intensity_funcs = intensity_funcs,
-    params = params
-  )
+  list(intensity_funcs = intensity_funcs, params = params)
 }
 
 plot_intensity_functions <- function(
@@ -91,7 +100,8 @@ if (FALSE) {  # Prevent execution when sourcing
     m = 3,
     total_time = 20,
     period_length = 10,
-    seed = 42
+    seed = 42,
+    periodic_weight = 0.9
   )
   
   # Visualize results

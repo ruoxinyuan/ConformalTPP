@@ -46,8 +46,9 @@ simulate_mutual_hawkes <- function(
     params,                  # Parameters from generate_hawkes_parameters
     total_time,              # Total simulation time
     memory_cutoff = 5,       # Memory window A
-    seed = NULL) {
-  # Simulate mutual Hawkes process with periodic intensities
+    seed = NULL,
+    periodic_weight = 1)     # Weight of periodic component [0,1]
+{ # Simulate mutual Hawkes process with periodic intensities
 
   
   if(!is.null(seed)) set.seed(seed)
@@ -60,7 +61,8 @@ simulate_mutual_hawkes <- function(
     period_length = params$period_length,
     lambda0_gamma_range = c(min(params$lambda0_gamma), max(params$lambda0_gamma)),
     lambda0_theta_range = c(min(params$lambda0_theta), max(params$lambda0_theta)),
-    seed = seed
+    seed = seed,
+    periodic_weight = periodic_weight
   )
   
   # Initialize event storage
@@ -176,7 +178,7 @@ if (FALSE) {
 
 
 # Example usage 2-----------------------------------------------------------
-if (TRUE) {
+if (FALSE) {
   output_dir <- "results2"
   if (!dir.exists(output_dir)) {
     dir.create(output_dir)
@@ -217,5 +219,55 @@ if (TRUE) {
     write.csv(simulation, file = file_path, row.names = FALSE)
     
     cat(sprintf("Simulation %d saved to %s\n", i, file_path))
+  }
+}
+
+
+# Example usage 3: Generate datasets with gradually decreasing periodicity weights-------------------------
+if (TRUE) {
+  weight_levels <- c(1.0, 0.75, 0.5, 0.25, 0.0)
+
+  output_dir <- "results3"
+  if (!dir.exists(output_dir)) {
+    dir.create(output_dir)
+  }
+
+  # Generate parameters
+  params <- generate_hawkes_parameters(
+    m = 5,                      # Number of event types
+    K = 5,                      # B-spline basis count
+    period_length = 10,         # Period length for intensity functions
+    theta_range = c(0, 0.5),    # Range for theta parameters in lambda0
+    gamma_range = c(0, 1),      # Range for gamma parameters in lambda0
+    alpha_range = c(0, 0.3),    # Range for alpha parameters
+    beta_range = c(1, 5),       # Range for beta parameters
+    seed = 42)
+  
+  # Normalize interaction matrix
+  params$alpha <- normalize_alpha_matrix(params$alpha, params$beta)
+
+  n <- 5000 # Training periods
+  k <- 100    # Context window size
+  n_test <- 100 # Test periods
+  total_time <- (n + k + n_test) * params$period_length
+
+  # Run simulation for different periodic weight levels
+  for (w in weight_levels) {
+    simulation <- simulate_mutual_hawkes(
+      params = params,
+      total_time = total_time,
+      memory_cutoff = 5,
+      seed = 45,
+      periodic_weight = w
+    )
+
+    print(head(simulation, n = 10))
+    print(tail(simulation, n = 10))
+
+    file_name <- sprintf("weight_%03d.csv", w * 100)
+    file_path <- file.path(output_dir, file_name)
+
+    write.csv(simulation, file = file_path, row.names = FALSE)
+
   }
 }
