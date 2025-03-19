@@ -1,5 +1,8 @@
 import numpy as np
 import os
+import warnings
+warnings.filterwarnings("ignore")
+
 from models import ConformalQR, GradientBoostingQR, LinearQR, RandomForestQR, mlpQR, lstmQR, TransformerQR
 from utils.data import load_event_data, generate_X_y_multitype, pad_sequences
 from utils.eval import empirical_coverage, average_interval_size

@@ -1,6 +1,9 @@
 import numpy as np
 import os
 from tqdm import tqdm
+import warnings
+warnings.filterwarnings("ignore")
+
 from models import ConformalQR, GradientBoostingQR, LinearQR, RandomForestQR, mlpQR, lstmQR, TransformerQR
 from utils.data import load_event_data, generate_X_y_multitype, pad_sequences
 from utils.eval import empirical_coverage, average_interval_size
@@ -82,6 +85,9 @@ def run_experiment(model_class, X_train, y_train, X_calib, y_calib,
     cqr.fit(reshape_func(X_train), y_train)
     cqr.calibrate(reshape_func(X_calib), y_calib)
     y_pred_lower, y_pred_upper = cqr.predict(reshape_func(X_test))
+
+    y_pred_lower = np.atleast_1d(y_pred_lower)
+    y_pred_upper = np.atleast_1d(y_pred_upper)
     
     return y_pred_lower, y_pred_upper
 
