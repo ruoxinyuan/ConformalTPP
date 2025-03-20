@@ -1,13 +1,14 @@
 library(splines2)
 
 generate_lambda0_intensity <- function(
-    K = 5,                     # Number of B-spline basis
-    m = 3,                     # Number of event types
-    total_time = 20,           # Total time range
-    period_length = 10,        # Period length for cycles
-    seed = 42,                 # Random seed
-    lambda0_gamma_range = c(0, 1),    # Range for beta parameters
-    lambda0_theta_range = c(0, 0.5),  # Range for theta parameters
+    K = 5,                            # Number of B-spline basis
+    m = 3,                            # Number of event types
+    total_time = 20,                  # Total time range
+    period_length = 10,               # Period length for cycles
+    seed = 42,                        # Random seed
+    lambda0_theta = NULL,             # Predefined theta parameters
+    lambda0_gamma = NULL,             # Predefined gamma matrix
+    lambda0_base = NULL,              # Predefined baseline parameters
     periodic_weight = 1.0)            # Weight of periodic component [0,1]
 { # Generate periodic intensity functions for multiple event types
   
@@ -20,10 +21,12 @@ generate_lambda0_intensity <- function(
     total_time = total_time,
     period_length = period_length,
     # Parameters for periodic component
-    lambda0_theta = runif(K, lambda0_theta_range[1], lambda0_theta_range[2]),
-    lambda0_gamma = matrix(runif(m*K, lambda0_gamma_range[1], lambda0_gamma_range[2]), nrow = m),
+    # Use predefined parameters or generate new ones
+    lambda0_theta = if(!is.null(lambda0_theta)) lambda0_theta else runif(K, 0, 0.5),
+    lambda0_gamma = if(!is.null(lambda0_gamma)) lambda0_gamma else matrix(runif(m*K, 0, 1), nrow = m),
+
     # Parameters for non-periodic component
-    lambda0_base = runif(m, 0, 0.24),  # Baseline intensity for non-periodic component
+    lambda0_base = if(!is.null(lambda0_base)) lambda0_base else runif(m, 0, 0.24),
     periodic_weight = periodic_weight
   )
   

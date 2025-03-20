@@ -59,8 +59,8 @@ simulate_mutual_hawkes <- function(
     m = params$m,
     total_time = total_time,
     period_length = params$period_length,
-    lambda0_gamma_range = c(min(params$lambda0_gamma), max(params$lambda0_gamma)),
-    lambda0_theta_range = c(min(params$lambda0_theta), max(params$lambda0_theta)),
+    lambda0_gamma = params$lambda0_gamma,
+    lambda0_theta = params$lambda0_theta,
     seed = seed,
     periodic_weight = periodic_weight
   )
@@ -224,7 +224,7 @@ if (FALSE) {
 
 
 # Example usage 3: Generate datasets with gradually decreasing periodicity weights-------------------------
-if (TRUE) {
+if (FALSE) {
   weight_levels <- c(1.0, 0.75, 0.5, 0.25, 0.0)
 
   output_dir <- "results3"
@@ -261,13 +261,59 @@ if (TRUE) {
       periodic_weight = w
     )
 
-    print(head(simulation, n = 10))
-    print(tail(simulation, n = 10))
+    # print(head(simulation, n = 10))
+    # print(tail(simulation, n = 10))
 
     file_name <- sprintf("weight_%03d.csv", w * 100)
     file_path <- file.path(output_dir, file_name)
 
     write.csv(simulation, file = file_path, row.names = FALSE)
 
+  }
+}
+
+
+# Example usage 4: Generate n sequences drawn exchangeably from the ground-truth TPP process.-------------------------
+if (TRUE) {
+  output_dir <- "results4"
+  if (!dir.exists(output_dir)) {
+    dir.create(output_dir)
+  }
+  
+  # Generate and fix all parameters
+  fixed_params <- generate_hawkes_parameters(
+    m = 5,
+    K = 5,
+    period_length = 10,
+    theta_range = c(0.1, 0.5),
+    gamma_range = c(0.1, 1),
+    alpha_range = c(0, 0.8),
+    beta_range = c(1, 2),
+    seed = 22
+  )
+  
+  fixed_params$alpha <- normalize_alpha_matrix(fixed_params$alpha, fixed_params$beta)
+
+  # Time configuration
+  n <- 5   # Number of periods
+  total_time <- n * fixed_params$period_length
+
+  # Generate 600 sequences
+  num_sequences <- 600
+  for (i in 1:num_sequences) {
+    simulation <- simulate_mutual_hawkes(
+      params = fixed_params,
+      total_time = total_time,
+      memory_cutoff = 5,
+      seed = i,
+      periodic_weight = 1
+    )
+    
+    file_name <- sprintf("sequence_%03d.csv", i)
+    file_path <- file.path(output_dir, file_name)
+
+    write.csv(simulation, file = file_path, row.names = FALSE)
+    
+    if(i %% 50 == 0) cat(sprintf("Generated %d/%d sequences\n", i, num_sequences))
   }
 }
